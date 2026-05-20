@@ -1,0 +1,14 @@
+\section{项目背景与目标}
+
+多轮对话 Agent 推理系统通常需要在连续交互中理解用户意图、维护上下文状态、调用外部工具并生成最终答案。相关研究包括链式思维提示、推理与行动结合的 ReAct 框架，以及面向工具使用的语言模型方法\cite{wei2022chain,yao2023react,schick2023toolformer}。
+
+本项目关注的核心性能指标是首 token 延迟（Time To First Token, TTFT），即从用户请求到模型开始输出第一个 token 的时间。对于交互式 Agent 系统，TTFT 直接影响用户对系统是否“响应及时”的主观感受，也能反映请求进入模型前后的关键链路开销。
+
+本项目的目标是围绕 TTFT 对多轮对话 Agent 推理流程进行系统性分析与优化。重点关注以下问题：
+
+\begin{itemize}
+  \item 如何拆解一次 Agent 请求的 TTFT 组成；
+  \item 如何分析上下文长度、KV cache 命中情况和 prefill 计算对 TTFT 的影响；
+  \item 如何减少多轮对话中重复上下文带来的首 token 等待时间；
+  \item 如何建立可复现实验流程，用 TTFT 数据评估不同优化策略的效果。
+\end{itemize}

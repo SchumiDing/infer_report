@@ -1,0 +1,17 @@
+\section{最终策略}
+
+综合实验结果与实现成本，我们采用“稳定 prompt 前缀 + 上下文裁剪 + 会话级 KV cache 复用 + 交互式请求优先调度”的组合策略。该方案直接围绕 TTFT 的主要组成部分进行优化：减少 prefill token 数、提高 cache 命中率，并降低排队时间。
+
+\subsection{策略流程}
+
+\begin{enumerate}
+  \item \textbf{固定前缀构造}：将系统提示词、工具 schema 和固定任务模板保持稳定，避免无意义的顺序或格式变化；
+  \item \textbf{上下文增量更新}：每轮只追加新的用户输入、必要工具结果和压缩后的历史摘要；
+  \item \textbf{KV cache 复用}：对稳定前缀和已确认历史建立会话级缓存，新请求优先复用已有 KV 状态；
+  \item \textbf{请求分级调度}：将交互式 Agent 请求与后台批处理请求分开排队，减少首 token 等待抖动；
+  \item \textbf{TTFT 监控}：分别记录端到端 TTFT、排队时间、prefill 时间和 cache 命中情况，便于定位回归。
+\end{enumerate}
+
+\subsection{预期收益}
+
+该组合方案能够在保持 Agent 多轮上下文能力的同时降低首 token 等待时间。上下文裁剪减少了必须计算的 token 数，稳定 prompt 前缀和会话级 KV cache 提升了缓存复用率，请求分级调度则减少了高并发下的排队波动。最终优化目标不是减少总生成时间，而是让用户更快看到第一个 token。

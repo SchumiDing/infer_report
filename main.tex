@@ -1,0 +1,52 @@
+\documentclass[UTF8,a4paper,12pt,fontset=fandol]{ctexart}
+
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.7cm,bottom=2.7cm}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\setlist[itemize]{itemsep=0.25em,topsep=0.25em}
+\setlist[enumerate]{itemsep=0.25em,topsep=0.25em}
+
+\title{\textbf{多轮对话 Agent 推理系统优化小组报告}}
+\author{
+  组员 A \quad 组员 B \quad 组员 C \quad 组员 D\\
+  \small 指导教师：XXX
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本文围绕多轮对话 Agent 推理系统的首 token 延迟（Time To First Token, TTFT）优化展开分析。报告首先说明小组分工与问题拆解方式，然后从请求排队、prefill、KV cache、上下文长度和调度策略等维度分析 TTFT 的主要影响因素，进一步总结若干尝试过的优化策略，最后给出综合权衡后的最终方案。
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\input{sections/background}
+\input{sections/team}
+\input{sections/problem_breakdown}
+\input{sections/performance_analysis}
+\input{sections/attempted_strategies}
+\input{sections/final_strategy}
+\input{sections/conclusion}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

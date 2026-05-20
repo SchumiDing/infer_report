@@ -1,0 +1,43 @@
+\section{性能分析}
+
+\subsection{核心指标}
+
+本项目只关注一个核心性能指标：\textbf{TTFT}。其定义为用户请求到达 Agent 服务后，到客户端接收到模型输出第一个 token 为止的时间。为避免统计口径混乱，我们不将总生成时长、吞吐量、token 成本或任务成功率作为主要性能指标。
+
+实验中记录的 TTFT 可以进一步拆分为：
+
+\begin{itemize}
+  \item \textbf{端到端 TTFT}：从请求进入 Agent 服务到首 token 返回；
+  \item \textbf{模型侧 TTFT}：从请求进入推理后端到首 token 生成；
+  \item \textbf{排队时间}：请求等待调度和 batch 合并的时间；
+  \item \textbf{prefill 时间}：模型处理输入上下文并建立 KV 状态的时间；
+  \item \textbf{首 token decode 时间}：完成 prefill 后生成第一个 token 的时间。
+\end{itemize}
+
+\subsection{影响因素}
+
+初步分析表明，TTFT 主要受到以下因素影响：
+
+\begin{enumerate}
+  \item \textbf{输入上下文长度}：上下文越长，prefill 计算量越大；
+  \item \textbf{KV cache 命中率}：可复用的历史上下文越多，重复 prefill 越少；
+  \item \textbf{请求调度策略}：batch 大小、排队策略和优先级会影响首 token 等待时间；
+  \item \textbf{工具前置调用}：若 Agent 在模型输出前必须调用工具，会拉长端到端 TTFT；
+  \item \textbf{模型与硬件配置}：模型规模、量化方式、GPU 显存压力和并发负载都会影响模型侧 TTFT。
+\end{enumerate}
+
+\subsection{KV Cache 分析}
+
+在多轮对话中，前几轮对话、系统提示词和工具说明通常在相邻请求之间保持不变。这部分内容适合通过 KV cache 复用，避免每轮重新 prefill。分析 KV cache 时需要重点关注以下问题：
+
+\begin{itemize}
+  \item 哪些上下文片段在多轮请求中保持稳定；
+  \item 当前推理框架是否支持 prefix cache 或 session cache；
+  \item prompt 拼接方式是否会破坏缓存前缀一致性；
+  \item cache 命中后 prefill 时间下降是否能体现在端到端 TTFT 中；
+  \item 高并发时 cache 占用显存是否会反过来影响调度和排队。
+\end{itemize}
+
+\subsection{主要瓶颈}
+
+结合 TTFT 统计和链路拆解，我们认为主要瓶颈集中在三个方面：第一，历史上下文不断增长导致 prefill 时间上升；第二，prompt 拼接不稳定导致 KV cache 难以命中；第三，高并发下排队时间波动较大，使用户感知到的首 token 延迟不稳定。

@@ -1,0 +1,27 @@
+\section{问题拆解}
+
+我们将一次多轮对话 Agent 请求的 TTFT 拆解为请求进入系统、上下文构造、模型排队、prefill 计算、KV cache 读取或写入，以及首 token decode 六个阶段。不同阶段的耗时共同决定用户看到第一个 token 前的等待时间。
+
+\subsection{请求进入系统}
+
+请求进入系统后通常会经历鉴权、路由、会话读取和任务类型判断。若 Agent 还需要先执行工具调用或规划步骤，则这些前置操作也会被计入首 token 之前的等待时间。
+
+\subsection{上下文构造}
+
+上下文构造阶段需要拼接系统提示词、历史对话、工具结果和当前用户输入。多轮场景下，历史消息越长，prefill 需要处理的 token 越多，TTFT 通常也越高。
+
+\subsection{模型排队}
+
+当推理服务负载较高时，请求可能先进入队列等待 batch 调度。队列等待不属于模型计算本身，但会直接增加 TTFT，并且容易在高并发场景中成为主要波动来源。
+
+\subsection{Prefill 计算}
+
+prefill 阶段会对输入 token 做一次前向计算，为后续 decode 生成注意力状态。对于首 token 来说，prefill 往往是最关键的模型侧开销，尤其在长上下文或 batch 较大时更加明显。
+
+\subsection{KV Cache}
+
+KV cache 保存历史 token 的 key/value 状态，使后续 token 不必重复计算完整上下文。在多轮对话中，如果系统能够复用前几轮稳定不变的上下文缓存，就可以减少 prefill 计算量，从而降低 TTFT。反之，如果每轮都重新拼接并计算完整历史，KV cache 的收益就无法充分体现。
+
+\subsection{首 Token Decode}
+
+首 token decode 是 prefill 完成后的第一次生成步骤。与长文本生成的总耗时相比，首 token decode 通常不是主要瓶颈，但它仍会受到采样参数、模型规模和服务端实现的影响。
